@@ -1,0 +1,738 @@
+x-ssacp-deps: &ssacp_all
+  - ssacp1
+  - ssacp2
+  - ssacp3
+  - mqtt-broker
+
+x-isccp-deps: &isccp_all
+  - isccp1
+  - isccp2
+  - isccp3
+  - isccp4
+  - isccp5
+  - isccp6
+  - isccp7
+  - isccp8
+  - isccp9
+  - isccp10
+  - isccp11
+  - isccp12
+  - isccp13
+  - isccp14
+  - isccp15
+  - mqtt-broker
+
+x-car-deps: &car_all
+  - car1
+  - car2
+  - car3
+  - car4
+  - car5
+  - car6
+  - car7
+  - car8
+  - car9
+  - car10
+  - car11
+  - car12
+  - car13
+  - car14
+  - car15
+  - car16
+  - car17
+  - car18
+  - car19
+  - car20
+  - car21
+  - car22
+  - car23
+  - car24
+
+services:
+  mqtt-broker:
+    image: eclipse-mosquitto
+    container_name: mqtt-broker
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    restart: unless-stopped
+    networks:
+      - interlagos_net
+
+  mongo1:
+    image: mongo:5.0
+    container_name: mongo1
+    restart: unless-stopped
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - mongo1data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "27017:27017"
+    networks:
+      - interlagos_net
+
+  mongo2:
+    image: mongo:5.0
+    container_name: mongo2
+    restart: unless-stopped
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - mongo2data:/data/db
+    networks:
+      - interlagos_net
+
+  mongo3:
+    image: mongo:5.0
+    container_name: mongo3
+    restart: unless-stopped
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - mongo3data:/data/db
+    networks:
+      - interlagos_net
+
+  mongo-init:
+    image: mongo:5.0
+    container_name: mongo-init
+    depends_on:
+      - mongo1
+      - mongo2
+      - mongo3
+    entrypoint: bash
+    command: /scripts/init-replica-set.sh
+    volumes:
+      - ./mongo-init:/scripts:ro
+    networks:
+      - interlagos_net
+  
+  ssacp1:
+    build:
+      context: ./python-backend/ssacp
+      dockerfile: Dockerfile
+    container_name: ssacp1
+    restart: unless-stopped
+    environment:
+      - PORT=18861
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - mongo1
+      - mongo2
+      - mongo3
+    networks:
+      - interlagos_net
+  
+  ssacp2:
+    build:
+      context: ./python-backend/ssacp
+      dockerfile: Dockerfile
+    container_name: ssacp2
+    restart: unless-stopped
+    environment:
+      - PORT=18862
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - mongo1
+      - mongo2
+      - mongo3
+      - mongo-init
+    networks:
+      - interlagos_net
+
+  ssacp3:
+    build:
+      context: ./python-backend/ssacp
+      dockerfile: Dockerfile
+    container_name: ssacp3
+    restart: unless-stopped
+    environment:
+      - PORT=18863
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - mongo1
+      - mongo2
+      - mongo3
+      - mongo-init
+    networks:
+      - interlagos_net
+
+  isccp1:
+    build:
+      context: ./python-backend/isccp
+      dockerfile: Dockerfile
+    container_name: isccp1
+    restart: unless-stopped
+    environment:
+      - ID=1
+      - HOST=ssacp1
+      - PORT=18861
+      - PYTHONUNBUFFERED=1
+    depends_on: *ssacp_all
+    networks:
+      - interlagos_net
+  isccp2:
+    build:
+      context: ./python-backend/isccp
+      dockerfile: Dockerfile
+    container_name: isccp2
+    restart: unless-stopped
+    environment:
+      - ID=2
+      - HOST=ssacp1
+      - PORT=18861
+      - PYTHONUNBUFFERED=1
+    depends_on: *ssacp_all
+    networks:
+      - interlagos_net
+  isccp3:
+    build:
+      context: ./python-backend/isccp
+      dockerfile: Dockerfile
+    container_name: isccp3
+    restart: unless-stopped
+    environment:
+      - ID=3
+      - HOST=ssacp1
+      - PORT=18861
+      - PYTHONUNBUFFERED=1
+    depends_on: *ssacp_all
+    networks:
+      - interlagos_net
+  isccp4:
+    build:
+      context: ./python-backend/isccp
+      dockerfile: Dockerfile
+    container_name: isccp4
+    restart: unless-stopped
+    environment:
+      - ID=4
+      - HOST=ssacp1
+      - PORT=18861
+      - PYTHONUNBUFFERED=1
+    depends_on: *ssacp_all
+    networks:
+      - interlagos_net
+  isccp5:
+    build:
+      context: ./python-backend/isccp
+      dockerfile: Dockerfile
+    container_name: isccp5
+    restart: unless-stopped
+    environment:
+      - ID=5
+      - HOST=ssacp1
+      - PORT=18861
+      - PYTHONUNBUFFERED=1
+    depends_on: *ssacp_all
+    networks:
+      - interlagos_net
+  isccp6:
+    build:
+      context: ./python-backend/isccp
+      dockerfile: Dockerfile
+    container_name: isccp6
+    restart: unless-stopped
+    environment:
+      - ID=6
+      - HOST=ssacp2
+      - PORT=18862
+      - PYTHONUNBUFFERED=1
+    depends_on: *ssacp_all
+    networks:
+      - interlagos_net
+  isccp7:
+    build:
+      context: ./python-backend/isccp
+      dockerfile: Dockerfile
+    container_name: isccp7
+    restart: unless-stopped
+    environment:
+      - ID=7
+      - HOST=ssacp2
+      - PORT=18862
+      - PYTHONUNBUFFERED=1
+    depends_on: *ssacp_all
+    networks:
+      - interlagos_net
+  isccp8:
+    build:
+      context: ./python-backend/isccp
+      dockerfile: Dockerfile
+    container_name: isccp8
+    restart: unless-stopped
+    environment:
+      - ID=8
+      - HOST=ssacp2
+      - PORT=18862
+      - PYTHONUNBUFFERED=1
+    depends_on: *ssacp_all
+    networks:
+      - interlagos_net
+  isccp9:
+    build:
+      context: ./python-backend/isccp
+      dockerfile: Dockerfile
+    container_name: isccp9
+    restart: unless-stopped
+    environment:
+      - ID=9
+      - HOST=ssacp2
+      - PORT=18862
+      - PYTHONUNBUFFERED=1
+    depends_on: *ssacp_all
+    networks:
+      - interlagos_net
+  isccp10:
+    build:
+      context: ./python-backend/isccp
+      dockerfile: Dockerfile
+    container_name: isccp10
+    restart: unless-stopped
+    environment:
+      - ID=10
+      - HOST=ssacp2
+      - PORT=18862
+      - PYTHONUNBUFFERED=1
+    depends_on: *ssacp_all
+    networks:
+      - interlagos_net
+  isccp11:
+    build:
+      context: ./python-backend/isccp
+      dockerfile: Dockerfile
+    container_name: isccp11
+    restart: unless-stopped
+    environment:
+      - ID=11
+      - HOST=ssacp3
+      - PORT=18863
+      - PYTHONUNBUFFERED=1
+    depends_on: *ssacp_all
+    networks:
+      - interlagos_net
+  isccp12:
+    build:
+      context: ./python-backend/isccp
+      dockerfile: Dockerfile
+    container_name: isccp12
+    restart: unless-stopped
+    environment:
+      - ID=12
+      - HOST=ssacp3
+      - PORT=18863
+      - PYTHONUNBUFFERED=1
+    depends_on: *ssacp_all
+    networks:
+      - interlagos_net
+  isccp13:
+    build:
+      context: ./python-backend/isccp
+      dockerfile: Dockerfile
+    container_name: isccp13
+    restart: unless-stopped
+    environment:
+      - ID=13
+      - HOST=ssacp3
+      - PORT=18863
+      - PYTHONUNBUFFERED=1
+    depends_on: *ssacp_all
+    networks:
+      - interlagos_net
+  isccp14:
+    build:
+      context: ./python-backend/isccp
+      dockerfile: Dockerfile
+    container_name: isccp14
+    restart: unless-stopped
+    environment:
+      - ID=14
+      - HOST=ssacp3
+      - PORT=18863
+      - PYTHONUNBUFFERED=1
+    depends_on: *ssacp_all
+    networks:
+      - interlagos_net
+  isccp15:
+    build:
+      context: ./python-backend/isccp
+      dockerfile: Dockerfile
+    container_name: isccp15
+    restart: unless-stopped
+    environment:
+      - ID=15
+      - HOST=ssacp3
+      - PORT=18863
+      - PYTHONUNBUFFERED=1
+    depends_on: *ssacp_all
+    networks:
+      - interlagos_net
+
+  car1:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car1
+    restart: unless-stopped
+    environment:
+      - DRIVER=Lando Norris
+      - TEAM=McLaren
+      - DURABILITY=0.05
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car2:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car2
+    restart: unless-stopped
+    environment:
+      - DRIVER=Oscar Piastri
+      - TEAM=McLaren
+      - DURABILITY=0.05
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car3:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car3
+    restart: unless-stopped
+    environment:
+      - DRIVER=Max Verstappen
+      - TEAM=Red Bull Racing
+      - DURABILITY=0.06
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car4:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car4
+    restart: unless-stopped
+    environment:
+      - DRIVER=Yuki Tsunoda
+      - TEAM=Red Bull Racing
+      - DURABILITY=0.06
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car5:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car5
+    restart: unless-stopped
+    environment:
+      - DRIVER=Charles Leclerc
+      - TEAM=Ferrari
+      - DURABILITY=0.07
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car6:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car6
+    restart: unless-stopped
+    environment:
+      - DRIVER=Lewis Hamilton
+      - TEAM=Ferrari
+      - DURABILITY=0.07
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car7:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car7
+    restart: unless-stopped
+    environment:
+      - DRIVER=George Russell
+      - TEAM=Mercedes
+      - DURABILITY=0.08
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car8:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car8
+    restart: unless-stopped
+    environment:
+      - DRIVER=Kimi Antonelli
+      - TEAM=Mercedes
+      - DURABILITY=0.08
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car9:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car9
+    restart: unless-stopped
+    environment:
+      - DRIVER=Pierre Gasly
+      - TEAM=Alpine
+      - DURABILITY=0.09
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car10:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car10
+    restart: unless-stopped
+    environment:
+      - DRIVER=Jack Doohan
+      - TEAM=Alpine
+      - DURABILITY=0.09
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car11:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car11
+    restart: unless-stopped
+    environment:
+      - DRIVER=Esteban Ocon
+      - TEAM=Haas
+      - DURABILITY=0.10
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car12:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car12
+    restart: unless-stopped
+    environment:
+      - DRIVER=Oliver Bearman
+      - TEAM=Haas
+      - DURABILITY=0.10
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car13:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car13
+    restart: unless-stopped
+    environment:
+      - DRIVER=Fernando Alonso
+      - TEAM=Aston Martin
+      - DURABILITY=0.11
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car14:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car14
+    restart: unless-stopped
+    environment:
+      - DRIVER=Lance Stroll
+      - TEAM=Aston Martin
+      - DURABILITY=0.11
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car15:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car15
+    restart: unless-stopped
+    environment:
+      - DRIVER=Alexander Albon
+      - TEAM=Williams
+      - DURABILITY=0.12
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car16:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car16
+    restart: unless-stopped
+    environment:
+      - DRIVER=Carlos Sainz
+      - TEAM=Williams
+      - DURABILITY=0.12
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car17:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car17
+    restart: unless-stopped
+    environment:
+      - DRIVER=Nico Hülkenberg
+      - TEAM=Sauber
+      - DURABILITY=0.13
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car18:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car18
+    restart: unless-stopped
+    environment:
+      - DRIVER=Gabriel Bortoleto
+      - TEAM=Sauber
+      - DURABILITY=0.13
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car19:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car19
+    restart: unless-stopped
+    environment:
+      - DRIVER=Liam Lawson
+      - TEAM=Racing Bulls
+      - DURABILITY=0.14
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car20:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car20
+    restart: unless-stopped
+    environment:
+      - DRIVER=Isack Hadjar
+      - TEAM=Racing Bulls
+      - DURABILITY=0.14
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car21:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car21
+    restart: unless-stopped
+    environment:
+      - DRIVER=Valteri Bottas
+      - TEAM=Audi
+      - DURABILITY=0.15
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car22:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car22
+    restart: unless-stopped
+    environment:
+      - DRIVER=Sérgio Perez
+      - TEAM=Audi
+      - DURABILITY=0.15
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car23:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car23
+    restart: unless-stopped
+    environment:
+      - DRIVER=Ayrton Senna
+      - TEAM=Legends
+      - DURABILITY=0.05
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+  car24:
+    build:
+      context: ./python-backend/car
+      dockerfile: Dockerfile
+    container_name: car24
+    restart: unless-stopped
+    environment:
+      - DRIVER=Michael Schumacher
+      - TEAM=Legends
+      - DURABILITY=0.05
+      - PYTHONUNBUFFERED=1
+    depends_on: *isccp_all
+    networks:
+      - interlagos_net
+
+networks:
+  interlagos_net:
+    driver: bridge
+
+volumes:
+  mongo1data:
+  mongo2data:
+  mongo3data:
