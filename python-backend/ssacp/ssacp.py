@@ -73,6 +73,52 @@ def get_or_create_active_race():
 
     return corrida
 
+# verifica se todos os pilotos completaram 10 voltas com todas as 15 curvas e finaliza
+def check_and_finalize_race():
+    """Verifica se corrida deve ser finalizada (10 voltas completas com 15 curvas cada)"""
+    corrida = corridas.find_one({"finalizada": False})
+    
+    if not corrida:
+        return
+    
+    # Verifica se todos os pilotos completaram volta 10 com curva 15
+    pilotos = corrida.get("pilotos", [])
+    
+    if not pilotos:
+        return
+    
+    todos_completaram = True
+    for piloto in pilotos:
+        voltas = piloto.get("voltas", {})
+        # Busca a volta 10 (pode estar como string ou int)
+        volta_10 = voltas.get("10") or voltas.get(10)
+        
+        if not volta_10:
+            todos_completaram = False
+            break
+        
+        # Verifica se tem a curva 15 (última curva)
+        tem_curva_15 = any(curva.get("curva") == 15 for curva in volta_10)
+        
+        if not tem_curva_15:
+            todos_completaram = False
+            break
+    
+    if todos_completaram and len(pilotos) > 0:
+        # Finaliza a corrida
+        corridas.update_one(
+            {"id_corrida": corrida["id_corrida"]},
+            {
+                "$set": {
+                    "finalizada": True,
+                    "fim": time.time()
+                }
+            }
+        )
+        print(f"[SSACP] Corrida {corrida['id_corrida']} finalizada! Todos os {len(pilotos)} pilotos completaram volta 10 curva 15.")
+
+
+
 #  SSACP
 class SSACP(rpyc.Service):
 
@@ -160,5 +206,12 @@ except Exception as e:
     print(f"[SSACP] ERRO ao iniciar servidor: {e}")
     exit(1)
 
+# Loop principal que verifica e finaliza corridas
 while True:
-    time.sleep(1)
+    try:
+        check_and_finalize_race()
+    except Exception as e:
+        print(f"[SSACP] ERRO ao verificar corrida: {e}")
+    
+    time.sleep(5)  # Verifica a cada 5 segundos
+
