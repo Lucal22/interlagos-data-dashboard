@@ -41,11 +41,11 @@ services:
     command: ["--replSet", "rs0", "--bind_ip_all"]
     volumes:
       - mongo1data:/data/db
-      - ./mongo-init:/docker-entrypoint-initdb.d:ro
     ports:
       - "27017:27017"
     networks:
       - interlagos_net
+
 
   mongo2:
     image: mongo:5.0
@@ -351,7 +351,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car1
-    restart: unless-stopped
     environment:
       - DRIVER=Lando Norris
       - TEAM=McLaren
@@ -366,7 +365,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car2
-    restart: unless-stopped
     environment:
       - DRIVER=Oscar Piastri
       - TEAM=McLaren
@@ -381,7 +379,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car3
-    restart: unless-stopped
     environment:
       - DRIVER=Max Verstappen
       - TEAM=Red Bull Racing
@@ -396,7 +393,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car4
-    restart: unless-stopped
     environment:
       - DRIVER=Yuki Tsunoda
       - TEAM=Red Bull Racing
@@ -411,7 +407,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car5
-    restart: unless-stopped
     environment:
       - DRIVER=Charles Leclerc
       - TEAM=Ferrari
@@ -426,7 +421,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car6
-    restart: unless-stopped
     environment:
       - DRIVER=Lewis Hamilton
       - TEAM=Ferrari
@@ -441,7 +435,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car7
-    restart: unless-stopped
     environment:
       - DRIVER=George Russell
       - TEAM=Mercedes
@@ -456,7 +449,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car8
-    restart: unless-stopped
     environment:
       - DRIVER=Kimi Antonelli
       - TEAM=Mercedes
@@ -471,7 +463,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car9
-    restart: unless-stopped
     environment:
       - DRIVER=Pierre Gasly
       - TEAM=Alpine
@@ -486,7 +477,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car10
-    restart: unless-stopped
     environment:
       - DRIVER=Jack Doohan
       - TEAM=Alpine
@@ -501,7 +491,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car11
-    restart: unless-stopped
     environment:
       - DRIVER=Esteban Ocon
       - TEAM=Haas
@@ -516,7 +505,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car12
-    restart: unless-stopped
     environment:
       - DRIVER=Oliver Bearman
       - TEAM=Haas
@@ -531,7 +519,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car13
-    restart: unless-stopped
     environment:
       - DRIVER=Fernando Alonso
       - TEAM=Aston Martin
@@ -546,7 +533,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car14
-    restart: unless-stopped
     environment:
       - DRIVER=Lance Stroll
       - TEAM=Aston Martin
@@ -561,7 +547,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car15
-    restart: unless-stopped
     environment:
       - DRIVER=Alexander Albon
       - TEAM=Williams
@@ -576,7 +561,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car16
-    restart: unless-stopped
     environment:
       - DRIVER=Carlos Sainz
       - TEAM=Williams
@@ -591,7 +575,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car17
-    restart: unless-stopped
     environment:
       - DRIVER=Nico Hülkenberg
       - TEAM=Sauber
@@ -606,7 +589,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car18
-    restart: unless-stopped
     environment:
       - DRIVER=Gabriel Bortoleto
       - TEAM=Sauber
@@ -621,7 +603,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car19
-    restart: unless-stopped
     environment:
       - DRIVER=Liam Lawson
       - TEAM=Racing Bulls
@@ -636,7 +617,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car20
-    restart: unless-stopped
     environment:
       - DRIVER=Isack Hadjar
       - TEAM=Racing Bulls
@@ -651,7 +631,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car21
-    restart: unless-stopped
     environment:
       - DRIVER=Valteri Bottas
       - TEAM=Audi
@@ -666,7 +645,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car22
-    restart: unless-stopped
     environment:
       - DRIVER=Sérgio Perez
       - TEAM=Audi
@@ -681,7 +659,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car23
-    restart: unless-stopped
     environment:
       - DRIVER=Ayrton Senna
       - TEAM=Legends
@@ -696,7 +673,6 @@ services:
       context: ./python-backend/car
       dockerfile: Dockerfile
     container_name: car24
-    restart: unless-stopped
     environment:
       - DRIVER=Michael Schumacher
       - TEAM=Legends

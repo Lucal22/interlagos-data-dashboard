@@ -1,0 +1,25 @@
+FROM node:20-alpine
+
+# Diretório da aplicação
+WORKDIR /app
+
+# Apenas copiar package.json e lock (melhor uso de cache)
+COPY package.json package-lock.json* ./
+
+# Instalar ferramentas necessárias para algumas libs nativas
+RUN apk add --no-cache python3 make g++ \
+    && npm install --silent --no-audit --progress=false \
+    && apk del make g++
+
+# Copiar o restante do código
+COPY . .
+
+# Variáveis que garantem hot reload funcionando dentro do Docker
+ENV CHOKIDAR_USEPOLLING=true
+ENV HOST=0.0.0.0
+ENV PORT=3000
+
+EXPOSE 3000
+
+# Iniciar o Next em modo dev
+CMD ["npm", "run", "dev"]
