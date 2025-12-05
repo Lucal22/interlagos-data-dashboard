@@ -8,7 +8,6 @@ from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure
 
 # Tenta conectar ao Replica Set com retry
 def connect_to_mongodb(retries=10):
-    """Conecta ao MongoDB com retry"""
     for attempt in range(retries):
         try:
             client = MongoClient(
@@ -18,15 +17,14 @@ def connect_to_mongodb(retries=10):
                 serverSelectionTimeoutMS=5000,
                 connectTimeoutMS=10000
             )
-            # Força uma tentativa de conexão
             client.admin.command('ping')
             print(f"[SSACP] Conectado ao MongoDB Replica Set")
             return client
         except (ServerSelectionTimeoutError, ConnectionFailure) as e:
-            print(f"[SSACP] Tentativa {attempt+1}/{retries} de conexão ao MongoDB falhou: {e}")
+            print(f"[SSACP] Tentativa {attempt+1}/{retries} falhou: {e}")
             if attempt < retries - 1:
                 time.sleep(2)
-    
+
     print(f"[SSACP] ERRO: Não conseguiu conectar ao MongoDB após {retries} tentativas")
     return None
 
@@ -39,9 +37,6 @@ db = client["f1"]
 corridas = db["corridas"]
 counters = db["counters"]
 
-lock = threading.Lock()
-
-# gera ID da corrida 
 def next_race_id():
     doc = counters.find_one_and_update(
         {"_id": "corrida_id"},
@@ -51,167 +46,117 @@ def next_race_id():
     )
     return doc["seq"]
 
-# obtém corrida ativa ou cria nova
 def get_or_create_active_race():
-    corrida = corridas.find_one({"finalizada": False})
-
-    if corrida:
-        return corrida
-
-    # Não existe corrida ativa → cria uma nova
+    
+    # Busca a corrida mais recente
+    ultima_corrida = corridas.find_one(sort=[("id_corrida", -1)])
+    
+    if ultima_corrida:
+        print(f"[SSACP] Usando corrida existente {ultima_corrida['id_corrida']}")
+        return ultima_corrida
+    
+    # Se não houver, cria uma nova
     novo_id = next_race_id()
+    corrida = corridas.find_one_and_update(
+        {"id_corrida": novo_id},
+        {
+            "$setOnInsert": {
+                "id_corrida": novo_id,
+                "inicio": time.time(),
+                "pilotos": []
+            }
+        },
+        upsert=True,
+        return_document=True
+    )
 
-    corrida = {
-        "id_corrida": novo_id,
-        "finalizada": False,
-        "inicio": time.time(),
-        "pilotos": []
-    }
-
-    corridas.insert_one(corrida)
-    print(f"[SSACP] Criada corrida {novo_id}")
-
+    print(f"[SSACP] Corrida {corrida['id_corrida']} criada")
     return corrida
 
-# verifica se todos os pilotos completaram 10 voltas com todas as 15 curvas e finaliza
-def check_and_finalize_race():
-    """Verifica se corrida deve ser finalizada (10 voltas completas com 15 curvas cada)"""
-    corrida = corridas.find_one({"finalizada": False})
-    
-    if not corrida:
-        return
-    
-    # Verifica se todos os pilotos completaram volta 10 com curva 15
-    pilotos = corrida.get("pilotos", [])
-    
-    if not pilotos:
-        return
-    
-    todos_completaram = True
-    for piloto in pilotos:
-        voltas = piloto.get("voltas", {})
-        # Busca a volta 10 (pode estar como string ou int)
-        volta_10 = voltas.get("10") or voltas.get(10)
-        
-        if not volta_10:
-            todos_completaram = False
-            break
-        
-        # Verifica se tem a curva 15 (última curva)
-        tem_curva_15 = any(curva.get("curva") == 15 for curva in volta_10)
-        
-        if not tem_curva_15:
-            todos_completaram = False
-            break
-    
-    if todos_completaram and len(pilotos) > 0:
-        # Finaliza a corrida
-        corridas.update_one(
-            {"id_corrida": corrida["id_corrida"]},
-            {
-                "$set": {
-                    "finalizada": True,
-                    "fim": time.time()
-                }
-            }
-        )
-        print(f"[SSACP] Corrida {corrida['id_corrida']} finalizada! Todos os {len(pilotos)} pilotos completaram volta 10 curva 15.")
+active_race = get_or_create_active_race()
+print(f"[SSACP] Corrida ativa garantida antes do servidor iniciar.")
 
-
-
-#  SSACP
 class SSACP(rpyc.Service):
-
     def exposed_enviar_dados(self, dados_volta_json):
-        """Recebe dados da volta e armazena no MongoDB"""
         try:
             info = json.loads(dados_volta_json)
 
-            piloto = info.get("piloto", "Unknown")
-            num_volta = int(info.get("volta", 0))
+            piloto_nome = info.get("piloto", "Unknown")
+            equipe = info.get("equipe")
+            num_volta = str(info.get("volta"))
             curva = int(info.get("curva", 0))
             tempo = float(info.get("tempo", 0))
             pneus = info.get("pneus", {})
 
-            with lock:
-                # Pega corrida ativa (ou cria automaticamente)
-                corrida = get_or_create_active_race()
-                id_corrida = corrida["id_corrida"]
+            corrida = get_or_create_active_race()
+            id_corrida = corrida["id_corrida"]
 
-                # Estrutura: corridas[id].pilotos[piloto].voltas[volta] = [curvas...]
-                # Tenta atualizar ou inserir dados do piloto/volta/curva
-                resultado = corridas.update_one(
-                    {
-                        "id_corrida": id_corrida,
-                        "pilotos.piloto": piloto,
-                        "pilotos.voltas": {"$exists": True}
-                    },
-                    {
-                        "$push": {
-                            "pilotos.$[pilot].voltas.$[volt]": {
-                                "curva": curva,
-                                "tempo": tempo,
-                                "pneus": pneus
-                            }
-                        }
-                    },
-                    array_filters=[
-                        {"pilot.piloto": piloto},
-                        {"volt": num_volta}
-                    ]
+            corrida = corridas.find_one({"id_corrida": id_corrida})
+            pilotos = corrida.get("pilotos", [])
+
+            idx = next((i for i, p in enumerate(pilotos) if p["piloto"] == piloto_nome), None)
+
+            if idx is None:
+                novo = {
+                    "piloto": piloto_nome,
+                    "voltas": {
+                        num_volta: [{
+                            "curva": curva,
+                            "tempo": tempo,
+                            "pneus": pneus
+                        }]
+                    }
+                }
+                if equipe:
+                    novo["equipe"] = equipe
+
+                corridas.update_one(
+                    {"id_corrida": id_corrida},
+                    {"$push": {"pilotos": novo}}
                 )
 
-                # Se nenhum piloto encontrado, cria novo com primeira volta
-                if resultado.matched_count == 0:
-                    corridas.update_one(
-                        {"id_corrida": id_corrida},
-                        {
-                            "$push": {
-                                "pilotos": {
-                                    "piloto": piloto,
-                                    "voltas": {
-                                        num_volta: [{
-                                            "curva": curva,
-                                            "tempo": tempo,
-                                            "pneus": pneus
-                                        }]
-                                    }
-                                }
-                            }
-                        }
-                    )
-                    print(f"[SSACP] Novo piloto {piloto} adicionado na corrida {id_corrida}")
-                else:
-                    print(f"[SSACP] Dados recebidos - Piloto: {piloto}, Volta: {num_volta}, Curva: {curva}")
+                print(f"[SSACP] NOVO piloto {piloto_nome} - Volta {num_volta} Curva {curva}")
+                return True
+
+            piloto_doc = pilotos[idx]
+
+            # Verifica se a volta existe, senão inicializa
+            if "voltas" not in piloto_doc or num_volta not in piloto_doc.get("voltas", {}):
+                corridas.update_one(
+                    {"id_corrida": id_corrida, "pilotos.piloto": piloto_nome},
+                    {"$set": {f"pilotos.$.voltas.{num_volta}": []}}
+                )
             
+            corridas.update_one(
+                {"id_corrida": id_corrida, "pilotos.piloto": piloto_nome},
+                {"$push": {f"pilotos.$.voltas.{num_volta}": {
+                    "curva": curva,
+                    "tempo": tempo,
+                    "pneus": pneus
+                }}}
+            )
+            
+            if equipe:
+                corridas.update_one(
+                    {"id_corrida": id_corrida, "pilotos.piloto": piloto_nome},
+                    {"$set": {"pilotos.$.equipe": equipe}}
+                )
+
             return True
-        except json.JSONDecodeError as e:
-            print(f"[SSACP] ERRO ao decodificar JSON: {e}")
-            return False
+
         except Exception as e:
-            print(f"[SSACP] ERRO ao armazenar dados: {e}")
+            print(f"[SSACP] ERRO armazenamento: {e}")
             return False
-
-
-# SERVERS
-ports = [18861, 18862, 18863]
 
 ssacp_port = int(os.getenv("PORT", "18861"))
 
 try:
     server = ThreadedServer(SSACP, port=ssacp_port)
-    print(f"[SSACP] Servidor SSACP rodando na porta {ssacp_port}")
+    print(f"[SSACP] Servidor rodando na porta {ssacp_port}")
     threading.Thread(target=server.start, daemon=True).start()
 except Exception as e:
     print(f"[SSACP] ERRO ao iniciar servidor: {e}")
     exit(1)
 
-# Loop principal que verifica e finaliza corridas
 while True:
-    try:
-        check_and_finalize_race()
-    except Exception as e:
-        print(f"[SSACP] ERRO ao verificar corrida: {e}")
-    
-    time.sleep(5)  # Verifica a cada 5 segundos
-
+    time.sleep(1)
