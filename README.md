@@ -66,29 +66,40 @@ Sistema distribuído que coleta, armazena e visualiza dados de telemetria de 24 
 ```
 interlagos-data-dashboard/
 ├── docker-compose.yml           # Orquestração dos containers
-├── next-dashboard/              # Frontend Next.js
+├── next-dashboard/              # Frontend Next.js + API REST
 │   ├── app/
-│   │   ├── api/                # API Routes (ISCCP)
+│   │   ├── api/
 │   │   │   └── corridas/
-│   │   │       ├── route.ts    # Endpoint REST
+│   │   │       ├── route.ts    # Endpoint REST para consultas
 │   │   │       └── realtime/
-│   │   │           └── route.ts # Endpoint SSE
+│   │   │           └── route.ts # Endpoint SSE (streaming)
 │   │   ├── components/
-│   │   │   ├── Header.tsx
+│   │   │   ├── Header.tsx                # Header com navegação
 │   │   │   ├── PilotosListClient.tsx    # Visualização individual
 │   │   │   └── TodosPilotosClient.tsx   # Grid com todos pilotos
 │   │   ├── pilotos/
-│   │   │   └── page.tsx        # Rota /pilotos
-│   │   └── page.tsx            # Rota / (home)
-│   └── libs/
-│       └── api.ts              # Cliente SSE e fetch
+│   │   │   └── page.tsx        # Rota /pilotos (todos os pilotos)
+│   │   ├── layout.tsx          # Layout raiz com header
+│   │   └── page.tsx            # Rota / (piloto individual)
+│   ├── libs/
+│   │   ├── api.ts              # Cliente SSE e fetch
+│   │   ├── api-utils.ts        # Utilitários de API (cache, retry)
+│   │   └── prisma.ts           # Cliente Prisma (se usado)
+│   └── utils/
+│       └── pilotos.ts          # Lista dos 24 pilotos
 └── python-backend/
-    ├── car/                    # Sistema embarcado dos carros
-    │   ├── car.py             # Cliente RPC que envia telemetria
+    ├── car/                    # Sistema embarcado dos carros (CAR)
+    │   ├── car.py              # Cliente MQTT que publica telemetria
+    │   ├── Dockerfile
+    │   ├── requirements.txt
     │   └── data/
-    │       └── curvascalculadas.csv
-    └── ssacp/
-        └── ssacp.py           # Servidor RPC + MongoDB
+    │       ├── curvascalculadas.csv
+    │       ├── dados.json
+    │       └── dadosCurvas.py
+    ├── isccp/                  # Broker MQTT (ISCCP)
+    │   └── isccp.py            # Recebe MQTT e encaminha via RPC
+    └── ssacp/                  # Servidor de armazenamento (SSACP)
+        └── ssacp.py            # Servidor RPC + MongoDB
 ```
 
 ## 🏁 Funcionalidades
