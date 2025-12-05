@@ -19,24 +19,24 @@ Sistema distribuído que coleta, armazena e visualiza dados de telemetria de 24 
 ```
 
 
-┌─────────────┐      MQTT
-│   CAR (x24) │────────────►  ┌────────────┐
-└─────────────┘               │   ISCCP    │
-                              │ (Broker)   │
+┌─────────────┐
+│     CAR     │     MQTT      ┌────────────┐
+│    (x24)    │ ────────────► │   ISCCP    │
+└─────────────┘               │   (x15)    │
                               └────────────┘
                                      │
                                      │ RPC (rpyc)
                                      ▼
                               ┌────────────┐      ┌──────────────────┐
                               │   SSACP    │ ────►│    MongoDB       │
-                              │  (Python)  │      │  (Distribuído)   │
+                              │    (x3)    │      │  (Distribuído)   │
                               └────────────┘      └──────────────────┘
                                                            │
                                                            │ Consultas
                                                            ▼
                                                     ┌────────────┐
                                                     │ Dashboard  │
-                                                    │   React    │
+                                                    │   Nextjs   │
                                                     └────────────┘
 ```
 
