@@ -4,16 +4,17 @@ import json
 import rpyc
 import time
 import threading
+from queue import Queue
 
 lock = threading.Lock()
 
 class ISCCP:
     def __init__(self, isccp_id, rpyc_host, rpyc_port):
         self.id = isccp_id
-        self.voltas = {}
         self.proxy = None
         self.rpyc_host = rpyc_host
         self.rpyc_port = rpyc_port
+        self.pending_queue = Queue()  # Fila para dados pendentes
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
@@ -31,6 +32,8 @@ class ISCCP:
                 try:
                     self.proxy = rpyc.connect(self.rpyc_host, self.rpyc_port)
                     print(f"[ISCCP {self.id}] Conectado ao SSACP em {self.rpyc_host}:{self.rpyc_port}")
+                    # Processa dados pendentes na fila
+                    self.flush_pending_queue()
                 except Exception as e:
                     print(f"[ISCCP {self.id}] Tentando reconectar ao SSACP: {e}")
                     time.sleep(5)
@@ -53,18 +56,41 @@ class ISCCP:
             self.armazenar_dados(dados)
 
     def armazenar_dados(self, data):
-        """Envia dados para SSACP com tratamento de erro"""
+
         if self.proxy is None:
-            print(f"[ISCCP {self.id}] ERRO: Proxy SSACP não está conectado! Aguardando reconexão...")
+            print(f"[ISCCP {self.id}] SSACP offline - adicionando à fila (tamanho: {self.pending_queue.qsize() + 1})")
+            self.pending_queue.put(data)
             return
         
         try:
             self.proxy.root.enviar_dados(json.dumps(data))
             print(f"[ISCCP {self.id}] Enviado para SSACP com sucesso!\n")
         except Exception as e:
-            print(f"[ISCCP {self.id}] ERRO ao enviar para SSACP: {e}\n")
-            # Marca proxy como desconectado para que background_reconnect tente reconectar
+            print(f"[ISCCP {self.id}] ERRO ao enviar para SSACP: {e} - adicionando à fila\n")
+            self.pending_queue.put(data)
             self.proxy = None
+
+    def flush_pending_queue(self):
+        queue_size = self.pending_queue.qsize()
+        if queue_size == 0:
+            return
+        
+        print(f"[ISCCP {self.id}] Processando {queue_size} dados pendentes...")
+        success_count = 0
+        
+        while not self.pending_queue.empty():
+            try:
+                data = self.pending_queue.get_nowait()
+                self.proxy.root.enviar_dados(json.dumps(data))
+                success_count += 1
+            except Exception as e:
+                print(f"[ISCCP {self.id}] ERRO ao processar fila: {e}")
+                # Recoloca o dado na fila
+                self.pending_queue.put(data)
+                self.proxy = None
+                break
+        
+        print(f"[ISCCP {self.id}] Fila processada: {success_count}/{queue_size} enviados com sucesso\n")
 
 
 # Lê variáveis de ambiente
