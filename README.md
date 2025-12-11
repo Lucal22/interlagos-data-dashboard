@@ -149,8 +149,7 @@ Cada curva captura:
 3. **ISCCP** recebe mensagens MQTT e encaminha via **RPC** para o **SSACP** (porta 18861)
 4. **SSACP** armazena no **MongoDB Distribuído** usando operações atômicas
 5. **Dashboard** consulta o **MongoDB** via SSE
-6. **ISCCP** busca dados do **MongoDB** a cada 100ms
-7. **Dashboard** atualiza a UI em tempo real
+6. **Dashboard** atualiza a UI em tempo real
 
 ## 🐳 Execução com Docker
 
